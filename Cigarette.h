@@ -141,15 +141,36 @@ void renderSmoke(float lookX, float lookY, float lookZ) {
     glPopAttrib(); // Restaurăm toate stările OpenGL
 }
 
+// Funcție ajutătoare pentru a plasa lumina jarului la coordonatele calculate
+void setupAmberLight(float x, float y, float z) {
+    // Poziția luminii în spațiul 3D (al patrulea parametru 1.0f înseamnă lumină punctiformă, pozițională)
+    GLfloat lightPos[] = { x, y, z, 1.0f };
+
+    // Culorile luminii: roșu aprins cu tentă de galben (portocaliu)
+    GLfloat lightAmbient[] = { 0.2f, 0.05f, 0.0f, 1.0f };
+    GLfloat lightDiffuse[] = { 1.0f, 0.3f, 0.0f, 1.0f };
+    GLfloat lightSpecular[] = { 1.0f, 0.5f, 0.0f, 1.0f };
+
+    glLightfv(GL_LIGHT1, GL_POSITION, lightPos);
+    glLightfv(GL_LIGHT1, GL_AMBIENT, lightAmbient);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
+    glLightfv(GL_LIGHT1, GL_SPECULAR, lightSpecular);
+
+    // Atenuare: vrem ca lumina să scadă FOARTE repede cu distanța (efect local)
+    glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 1.0f);
+    glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 2.0f);
+    glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 5.0f);
+
+    glEnable(GL_LIGHT1); // Activăm sursa de lumină pentru jar
+}
+
 void drawCigaretteModel(float x, float y, float z, float rotY, bool isOnBalustrade, bool heavySmoke) {
     glPushMatrix();
 
-    // 1. Aplicăm poziționarea și rotația globală
     glTranslatef(x, y, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
 
     float length = 0.19f;
-
     float totalRot = rotY;
     if (isOnBalustrade) {
         glRotatef(-rotY, 0.0f, 1.0f, 0.0f);
@@ -158,60 +179,63 @@ void drawCigaretteModel(float x, float y, float z, float rotY, bool isOnBalustra
     }
 
     float rad = totalRot * M_PI / 180.0f;
-    // Pe baza unghiului total, calculăm exact deplasarea pe axele X și Z globale
     float varfX = x + sin(rad) * length;
-    float varfY = y; // Rămâne la aceeași înălțime deoarece rotațiile sunt doar pe axa Y (în jurul stâlpului)
+    float varfY = y;
     float varfZ = z + cos(rad) * length;
 
     updateSmokeSystem(varfX, varfY, varfZ, heavySmoke);
 
+    // --- ADAUGARE PUNCT LUMINOS (Când țigara e pe balustradă) ---
+    setupAmberLight(varfX, varfY, varfZ);
 
-    // Dimensiuni stilizate tip Roblox block (destul de mari ca să le reperăm clar)
-    float halfW = 0.007f; // Grosimea (jumătate din lățimea pătratului)
+    extern float timeOfDay;
 
-    drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.0f, 0.05f, 0.85f, 0.45f, 0.2f);
+    // ... (restul codului tău de poziționare, fum și setupAmberLight) ...
 
-    // Foița albă
-    drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.05f, 0.18f, 0.95f, 0.95f, 0.95f);
+    glDisable(GL_LIGHTING); // O păstrăm dezactivată ca să nu devină un „dreptunghi bej”
+    float halfW = 0.007f;
 
-    // Jarul aprins
+    // Calculăm un factor de umbră pentru corpul țigării (foiță și filtru)
+    // Ziua = 1.0 (culori maxime), Noaptea = 0.25 (culori stinse, adaptate la întuneric)
+    float cigDarkness = 0.25f + 0.75f * timeOfDay;
+
+    // 1. Filtrul portocaliu (influențat de întunericul nopții)
+    drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.0f, 0.05f,
+        0.85f * cigDarkness, 0.45f * cigDarkness, 0.2f * cigDarkness);
+
+    // 2. Foița albă (influențată puternic de noapte - devine un gri-închis realist)
+    drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.05f, 0.18f,
+        0.95f * cigDarkness, 0.95f * cigDarkness, 0.95f * cigDarkness);
+
+    // 3. Jarul aprins! (ATENȚIE: Jarul EMITE lumină, deci NU trebuie să se stingă noaptea! 
+    // Din contră, noaptea trebuie să fie la fel de roșu și intens!)
     drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.18f, 0.19f, 1.0f, 0.2f, 0.0f);
 
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+
+    glEnable(GL_LIGHTING);
     glPopMatrix();
 }
-
 
 void drawCigaretteModel(const Player& player, bool heavySmoke) {
     glPushMatrix();
 
-    // 1. MUTĂM ORIGINEA FIX LA OCHII JUCĂTORULUI
     glTranslatef(player.x, player.y, player.z);
 
-    // 2. ROTIM AXELE CORECT DUPĂ PRIVIREA JUCĂTORULUI
-    // Aflăm unghiul pe orizontală (Y)
     float angleY = atan2(player.lookX, player.lookZ) * 180.0f / M_PI;
     glRotatef(angleY, 0.0f, 1.0f, 0.0f);
 
-    // Aflăm unghiul pe verticală (X)
     float pitchLen = sqrt(player.lookX * player.lookX + player.lookZ * player.lookZ);
     float angleX = -atan2(player.lookY, pitchLen) * 180.0f / M_PI;
     glRotatef(angleX, 1.0f, 0.0f, 0.0f);
 
-    // 3. DEPLASĂM ȚIGARA ÎN SPAȚIUL LOCAL AL CAMEREI (Aici se sparge elipsa!)
-    // Pentru că am rotit deja axele, acum:
-    // +Z înseamnă "în fața ochilor"
-    // +X înseamnă "în dreapta ochilor"
-    // +Y înseamnă "în sus"
-    // O punem puțin în dreapta (0.06), un pic mai jos (-0.08) și un pic în față (0.2)
     float localX = -0.16f;
     float localY = -0.08f;
     float localZ = 0.20f;
 
     glTranslatef(localX, localY, localZ);
 
-    // --- CALCULĂM POZIȚIA GLOBALĂ A VÂRFULUI PENTRU FUM ---
-    // Lungimea țigării este 0.19f și se întinde pe axa Z locală. Vârful ei local este (localX, localY, localZ + 0.19f)
-    // Folosim vectorii normalizați ai camerei ca să îi dăm sistemului de fum poziția exactă în lumea reală a jocului
     float lX = player.lookX, lY = player.lookY, lZ = player.lookZ;
     float len = sqrt(lX * lX + lY * lY + lZ * lZ);
     if (len > 0.0f) { lX /= len; lY /= len; lZ /= len; }
@@ -220,25 +244,38 @@ void drawCigaretteModel(const Player& player, bool heavySmoke) {
     float rLen = sqrt(rX * rX + rZ * rZ);
     if (rLen > 0.0f) { rX /= rLen; rZ /= rLen; }
 
-    // Poziția matematică absolută în spațiul hărții pentru particule:
     float varfX = player.x + lX * (localZ + 0.19f) + rX * localX;
-    float varfY = player.y + lY * (localZ + 0.19f) + localY; // aproximare rapidă pe înălțime
+    float varfY = player.y + lY * (localZ + 0.19f) + localY;
     float varfZ = player.z + lZ * (localZ + 0.19f) + rZ * localX;
 
     updateSmokeSystem(varfX, varfY, varfZ, heavySmoke);
-    // ------------------------------------------------------
 
-    // 4. DESENAREA PROPRIU-ZISĂ A MODELULUI PĂTRAT
+    // --- ADAUGARE PUNCT LUMINOS (Când țigara e în mâna jucătorului) ---
+    setupAmberLight(varfX, varfY, varfZ);
+
+    extern float timeOfDay;
+
+    // ... (restul codului tău de poziționare, fum și setupAmberLight) ...
+
+    glDisable(GL_LIGHTING); // O păstrăm dezactivată ca să nu devină un „dreptunghi bej”
     float halfW = 0.007f;
 
-    // Filtrul portocaliu
-    drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.0f, 0.05f, 0.85f, 0.45f, 0.2f);
+    // Calculăm un factor de umbră pentru corpul țigării (foiță și filtru)
+    // Ziua = 1.0 (culori maxime), Noaptea = 0.25 (culori stinse, adaptate la întuneric)
+    float cigDarkness = 0.25f + 0.75f * timeOfDay;
 
-    // Foița albă
-    drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.05f, 0.18f, 0.95f, 0.95f, 0.95f);
+    // 1. Filtrul portocaliu (influențat de întunericul nopții)
+    drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.0f, 0.05f,
+        0.85f * cigDarkness, 0.45f * cigDarkness, 0.2f * cigDarkness);
 
-    // Jarul aprins
+    // 2. Foița albă (influențată puternic de noapte - devine un gri-închis realist)
+    drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.05f, 0.18f,
+        0.95f * cigDarkness, 0.95f * cigDarkness, 0.95f * cigDarkness);
+
+    // 3. Jarul aprins! (ATENȚIE: Jarul EMITE lumină, deci NU trebuie să se stingă noaptea! 
+    // Din contră, noaptea trebuie să fie la fel de roșu și intens!)
     drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.18f, 0.19f, 1.0f, 0.2f, 0.0f);
 
+    glEnable(GL_LIGHTING);
     glPopMatrix();
 }

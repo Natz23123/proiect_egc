@@ -5,17 +5,20 @@
 #include "utils.h"
 #include <cstdlib>
 #include "Cigarette.h"
+#include "Street.h"
+#include "Building.h"
 
 void drawBalcony(float base, float backLimit, float frontLimit, float leftLimit, float rightLimit, GLuint betonID, GLuint floorID, GLuint ceilID) {
     float wallH = 2.5f;
 
-    
+    glEnable(GL_LIGHTING); // Ne asigurăm că iluminarea e pornită pentru balcon
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, floorID);
     glColor3f(0.35f, 0.32f, 0.25f);
 
-    // 1. FLOOR (Podeaua)
+    // 1. FLOOR (Podeaua) -> Normala în sus (+Y)
     glBegin(GL_QUADS);
+    glNormal3f(0.0f, 1.0f, 0.0f);
     glTexCoord2f(0.0f, 0.0f); glVertex3f(leftLimit, base, backLimit);
     glTexCoord2f(2.0f, 0.0f); glVertex3f(rightLimit, base, backLimit);
     glTexCoord2f(2.0f, 2.0f); glVertex3f(rightLimit, base, frontLimit);
@@ -25,40 +28,48 @@ void drawBalcony(float base, float backLimit, float frontLimit, float leftLimit,
     glBindTexture(GL_TEXTURE_2D, ceilID);
     glColor3f(0.4f, 0.4f, 0.4f);
 
-    // 2. Ceiling (Acoperișul)
+    // 2. Ceiling (Acoperișul) -> Normala în jos (-Y)
     glBegin(GL_QUADS);
+    glNormal3f(0.0f, -1.0f, 0.0f);
     glTexCoord2f(0.0f, 0.0f); glVertex3f(leftLimit, base + wallH, backLimit);
     glTexCoord2f(2.0f, 0.0f); glVertex3f(rightLimit, base + wallH, backLimit);
     glTexCoord2f(2.0f, 2.0f); glVertex3f(rightLimit, base + wallH, frontLimit);
     glTexCoord2f(0.0f, 2.0f); glVertex3f(leftLimit, base + wallH, frontLimit);
     glEnd();
 
-    // 3. LEFT WALL
+    // Pentru pereți, folosim textura de beton
+    glBindTexture(GL_TEXTURE_2D, betonID);
+
+    // 3. LEFT WALL -> Normala spre interiorul balconului (+X)
     glBegin(GL_QUADS);
+    glNormal3f(1.0f, 0.0f, 0.0f);
     glTexCoord2f(0.0f, 0.0f); glVertex3f(leftLimit, base, backLimit);
     glTexCoord2f(1.0f, 0.0f); glVertex3f(leftLimit, base + wallH, backLimit);
     glTexCoord2f(1.0f, 1.0f); glVertex3f(leftLimit, base + wallH, frontLimit);
     glTexCoord2f(0.0f, 1.0f); glVertex3f(leftLimit, base, frontLimit);
     glEnd();
 
-    // 4. RIGHT WALL
+    // 4. RIGHT WALL -> Normala spre interiorul balconului (-X)
     glBegin(GL_QUADS);
+    glNormal3f(-1.0f, 0.0f, 0.0f);
     glTexCoord2f(0.0f, 0.0f); glVertex3f(rightLimit, base, backLimit);
     glTexCoord2f(1.0f, 0.0f); glVertex3f(rightLimit, base + wallH, backLimit);
     glTexCoord2f(1.0f, 1.0f); glVertex3f(rightLimit, base + wallH, frontLimit);
     glTexCoord2f(0.0f, 1.0f); glVertex3f(rightLimit, base, frontLimit);
     glEnd();
 
-    // 5. BACK WALL (Peretele blocului)
+    // 5. BACK WALL (Peretele blocului) -> Normala spre stradă (-Z)
     glBegin(GL_QUADS);
+    glNormal3f(0.0f, 0.0f, -1.0f);
     glTexCoord2f(0.0f, 0.0f); glVertex3f(leftLimit, base, frontLimit);
     glTexCoord2f(2.0f, 0.0f); glVertex3f(rightLimit, base, frontLimit);
     glTexCoord2f(2.0f, 1.0f); glVertex3f(rightLimit, base + wallH, frontLimit);
     glTexCoord2f(0.0f, 1.0f); glVertex3f(leftLimit, base + wallH, frontLimit);
     glEnd();
 
-    // 6. EDGE (Balustrada) - 
+    // 6. EDGE (Balustrada) -> Normala spre cameră (+Z)
     glBegin(GL_QUADS);
+    glNormal3f(0.0f, 0.0f, 1.0f);
     glTexCoord2f(0.0f, 0.0f); glVertex3f(leftLimit, base, backLimit);
     glTexCoord2f(2.0f, 0.0f); glVertex3f(rightLimit, base, backLimit);
     glTexCoord2f(2.0f, 1.0f); glVertex3f(rightLimit, base + 1.25f, backLimit);
@@ -66,17 +77,12 @@ void drawBalcony(float base, float backLimit, float frontLimit, float leftLimit,
     glEnd();
 
     glDisable(GL_TEXTURE_2D);
-
-    // 7. CIGGY
-    glPointSize(10.0f);
-    glBegin(GL_POINTS);
-    glColor3f(1.0f, 0.5f, 0.0f); // Portocaliu fix
-    glVertex3f(0.0f, base + 1.25f, backLimit);
-    glEnd();
 }
 
 void drawGround() {
+    glEnable(GL_LIGHTING);
     glBegin(GL_QUADS);
+    glNormal3f(0.0f, 1.0f, 0.0f); // Solul privește în sus
     glColor3f(0.05f, 0.05f, 0.1f);
     glVertex3f(-50.0f, 0.0f, -50.0f);
     glVertex3f(50.0f, 0.0f, -50.0f);
@@ -127,4 +133,9 @@ void drawSky(GLuint skyTexture) {
     glEnd();
 
     glPopAttrib();
+}
+
+
+void drawCity() {
+
 }

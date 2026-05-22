@@ -2,27 +2,25 @@
 #define BUILDING_H
 
 #include <GL/freeglut.h>
-#include <cstdlib> // Pentru rand()
+#include <cstdlib>
 
 class Building {
 private:
-    float x, z;              // Poziția pe sol a centrului clădirii
-    float width, depth;      // Dimensiunile la sol
-    int numFloors;           // Numărul de etaje
-    float floorHeight;       // Înălțimea unui etaj (ex: 3.5f)
-    GLuint roofTexture;      // Textura pentru acoperiș
+    float x, z;
+    float width, depth;
+    int numFloors;
+    float floorHeight;
+    GLuint roofTexture;
 
-    // Structura care ține cele 4 fețe ale unui etaj
     struct FloorData {
-        GLuint faceTextures[4];
+        GLuint faceTextures[4]; // 0: Față, 1: Spate, 2: Stânga, 3: Dreapta
     };
 
-    FloorData* floors; // Pointer către array-ul de etaje alocat dinamic
+    FloorData* floors;
 
 public:
-    // Constructorul primește acum un array de GLuint și mărimea lui (numărul de poze disponibile)
     Building(float x, float z, float w, float d, int floorsCount, float fHeight,
-        GLuint availableTextures[], int texturePoolSize, GLuint roofTex) {
+        GLuint wallTextures[], int wallPoolSize, GLuint entranceTexture, GLuint roofTex) {
         this->x = x;
         this->z = z;
         this->width = w;
@@ -33,13 +31,18 @@ public:
 
         this->floors = new FloorData[numFloors];
 
-        if (texturePoolSize > 0) {
+        if (wallPoolSize > 0) {
             for (int i = 0; i < numFloors; i++) {
                 for (int face = 0; face < 4; face++) {
-                    int randomIndex = rand() % texturePoolSize;
-                    floors[i].faceTextures[face] = availableTextures[randomIndex];
+                    int randomWallIdx = rand() % wallPoolSize;
+                    floors[i].faceTextures[face] = wallTextures[randomWallIdx];
                 }
             }
+        }
+
+        if (numFloors > 0) {
+            int randomFaceForEntrance = rand() % 4;
+            floors[0].faceTextures[randomFaceForEntrance] = entranceTexture;
         }
     }
 
@@ -56,45 +59,53 @@ public:
         float zMax = z + depth / 2.0f;
 
         glDisable(GL_CULL_FACE);
-        glDisable(GL_LIGHTING);
+        glEnable(GL_LIGHTING); // ACTIVĂM iluminarea pentru clădiri!
         glEnable(GL_TEXTURE_2D);
+        GLfloat matAmbient[] = { 1.0f, 1.0f, 1.0f, 1.0f }; // Reflectă maxim lumina ambientală
+        GLfloat matDiffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f }; // Reflectă maxim lumina difuză
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, matAmbient);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, matDiffuse);
+
         glColor3f(1.0f, 1.0f, 1.0f);
 
-        // --- RANDARE ETAJE ---
         for (int i = 0; i < numFloors; i++) {
             float yMin = i * floorHeight;
             float yMax = (i + 1) * floorHeight;
 
-            // Fața din FAȚĂ (Z Max)
+            // Fața din FAȚĂ (Z Max) -> Normala privește spre +Z
             glBindTexture(GL_TEXTURE_2D, floors[i].faceTextures[0]);
             glBegin(GL_QUADS);
+            glNormal3f(0.0f, 0.0f, 1.0f);
             glTexCoord2f(0.0f, 0.0f); glVertex3f(xMin, yMin, zMax);
             glTexCoord2f(1.0f, 0.0f); glVertex3f(xMax, yMin, zMax);
             glTexCoord2f(1.0f, 1.0f); glVertex3f(xMax, yMax, zMax);
             glTexCoord2f(0.0f, 1.0f); glVertex3f(xMin, yMax, zMax);
             glEnd();
 
-            // Fața din SPATE (Z Min)
+            // Fața din SPATE (Z Min) -> Normala privește spre -Z
             glBindTexture(GL_TEXTURE_2D, floors[i].faceTextures[1]);
             glBegin(GL_QUADS);
+            glNormal3f(0.0f, 0.0f, -1.0f);
             glTexCoord2f(0.0f, 0.0f); glVertex3f(xMax, yMin, zMin);
             glTexCoord2f(1.0f, 0.0f); glVertex3f(xMin, yMin, zMin);
             glTexCoord2f(1.0f, 1.0f); glVertex3f(xMin, yMax, zMin);
             glTexCoord2f(0.0f, 1.0f); glVertex3f(xMax, yMax, zMin);
             glEnd();
 
-            // Fața din STÂNGA (X Min)
+            // Fața din STÂNGA (X Min) -> Normala privește spre -X
             glBindTexture(GL_TEXTURE_2D, floors[i].faceTextures[2]);
             glBegin(GL_QUADS);
+            glNormal3f(-1.0f, 0.0f, 0.0f);
             glTexCoord2f(0.0f, 0.0f); glVertex3f(xMin, yMin, zMin);
             glTexCoord2f(1.0f, 0.0f); glVertex3f(xMin, yMin, zMax);
             glTexCoord2f(1.0f, 1.0f); glVertex3f(xMin, yMax, zMax);
             glTexCoord2f(0.0f, 1.0f); glVertex3f(xMin, yMax, zMin);
             glEnd();
 
-            // Fața din DREAPTA (X Max)
+            // Fața din DREAPTA (X Max) -> Normala privește spre +X
             glBindTexture(GL_TEXTURE_2D, floors[i].faceTextures[3]);
             glBegin(GL_QUADS);
+            glNormal3f(1.0f, 0.0f, 0.0f);
             glTexCoord2f(0.0f, 0.0f); glVertex3f(xMax, yMin, zMax);
             glTexCoord2f(1.0f, 0.0f); glVertex3f(xMax, yMin, zMin);
             glTexCoord2f(1.0f, 1.0f); glVertex3f(xMax, yMax, zMin);
@@ -102,10 +113,11 @@ public:
             glEnd();
         }
 
-        // --- RANDARE ACOPERIȘ ---
+        // --- ACOPERIȘ --- -> Normala privește în sus (+Y)
         float topY = numFloors * floorHeight;
         glBindTexture(GL_TEXTURE_2D, roofTexture);
         glBegin(GL_QUADS);
+        glNormal3f(0.0f, 1.0f, 0.0f);
         glTexCoord2f(0.0f, 0.0f); glVertex3f(xMin, topY, zMin);
         glTexCoord2f(1.0f, 0.0f); glVertex3f(xMax, topY, zMin);
         glTexCoord2f(1.0f, 1.0f); glVertex3f(xMax, topY, zMax);
