@@ -1,14 +1,17 @@
 #include <GL/freeglut.h>
 #include "Player.h"
 #include "Assets.h"
+#include "Building.h"
 #include <ctype.h>
 
 // --- VARIABILE GLOBALE ---
-float floorHeight = 9.0f; // Etajul 4 (4 etaje * 3m)
+float floorHeight = 3.5f * 3; // Etajul 4 (4 etaje * 3m)
 float eyeLevel = 1.7f;
 int lastCigaretteToggleTime = 0; // Memorează când s-a apăsat ultima dată tasta E
 float backLimit = -0.5f, frontLimit = 3.0f, leftLimit = -3.5f, rightLimit = 1.0f; // Marimea Balconului
 Player player(0.0f, floorHeight + eyeLevel, 1.0f); // Pornim de pe balcon
+Building* blocMuncitoresc;
+Building* turnCiment;
 
 int screenW = 1160, screenH = 600;
 bool keys[256];
@@ -18,6 +21,8 @@ void initKeys() {
 }
 
 GLuint texBeton, texFloor, texCeiling, texClouds;
+GLuint texWall1, texWall2, texWall3, texWall4;
+GLuint texRoof;
 
 void init() {
     glClearColor(0.55f, 0.7f, 1.0f, 1.0f);
@@ -27,6 +32,20 @@ void init() {
     texCeiling = loadTexture("ceiling.bmp");
 	texFloor = loadTexture("floor.bmp");
     texClouds = loadSkyTexture("clouds.ppm");
+    
+    srand(time(NULL));
+
+    // Încărcăm texturile de etaj individuale
+    texWall1 = loadTexture("face1.bmp");
+    texWall2 = loadTexture("face2.bmp");
+    texWall3 = loadTexture("face3.bmp");
+    texWall4 = loadTexture("face4.bmp");
+    texRoof = loadTexture("wall.bmp");
+
+    GLuint wallPool[4] = { texWall1, texWall2, texWall3, texWall4 };
+
+    blocMuncitoresc = new Building(-11.0f, -15.0f, 12.0f, 12.0f, 10, 3.5f, wallPool, 4, texRoof);
+    turnCiment = new Building(15.0f, -30.0f, 10.0f, 10.0f, 15, 3.5f, wallPool, 4, texRoof);
 }
 
 void reshape(int w, int h) {
@@ -100,6 +119,11 @@ void display() {
     glPopMatrix();
 
 	drawGround();
+
+    if (blocMuncitoresc) 
+        blocMuncitoresc->draw();
+    if (turnCiment)
+        turnCiment->draw();
 
     GLfloat ambientColor[] = { 1.0f, 0.9f, 0.7f, 0.6f }; // Un gri-albăstrui de noapte
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientColor);

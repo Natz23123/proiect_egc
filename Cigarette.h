@@ -141,30 +141,6 @@ void renderSmoke(float lookX, float lookY, float lookZ) {
     glPopAttrib(); // Restaurăm toate stările OpenGL
 }
 
-void drawSimpleBlock(float xMin, float xMax, float yMin, float yMax, float zMin, float zMax, float r, float g, float b) {
-    glColor3f(r, g, b);
-    glBegin(GL_QUADS);
-    // Fața din față (Z max)
-    glVertex3f(xMin, yMin, zMax); glVertex3f(xMax, yMin, zMax);
-    glVertex3f(xMax, yMax, zMax); glVertex3f(xMin, yMax, zMax);
-    // Fața din spate (Z min)
-    glVertex3f(xMin, yMin, zMin); glVertex3f(xMin, yMax, zMin);
-    glVertex3f(xMax, yMax, zMin); glVertex3f(xMax, yMin, zMin);
-    // Fața de sus (Y max)
-    glVertex3f(xMin, yMax, zMin); glVertex3f(xMin, yMax, zMax);
-    glVertex3f(xMax, yMax, zMax); glVertex3f(xMax, yMax, zMin);
-    // Fața de jos (Y min)
-    glVertex3f(xMin, yMin, zMin); glVertex3f(xMax, yMin, zMin);
-    glVertex3f(xMax, yMin, zMax); glVertex3f(xMin, yMin, zMax);
-    // Fața din dreapta (X max)
-    glVertex3f(xMax, yMin, zMin); glVertex3f(xMax, yMax, zMin);
-    glVertex3f(xMax, yMax, zMax); glVertex3f(xMax, yMin, zMax);
-    // Fața din stânga (X min)
-    glVertex3f(xMin, yMin, zMin); glVertex3f(xMin, yMin, zMax);
-    glVertex3f(xMin, yMax, zMax); glVertex3f(xMin, yMax, zMin);
-    glEnd();
-}
-
 void drawCigaretteModel(float x, float y, float z, float rotY, bool isOnBalustrade, bool heavySmoke) {
     glPushMatrix();
 
