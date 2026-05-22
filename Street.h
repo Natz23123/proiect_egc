@@ -5,14 +5,13 @@
 
 class Street {
 private:
-    float startX, startZ; // Punctul de unde începe strada
-    float length;         // Cât de lungă este strada
-    float width;          // Lățimea străzii (ex: 6.0f pentru două benzi)
-    bool axisX;           // true dacă strada merge pe axa X, false dacă merge pe axa Z
-    GLuint textureID;     // ID-ul texturii de drum drept repetabil
+    float startX, startZ;
+    float length;
+    float width;
+    bool axisX;
+    GLuint textureID;
 
 public:
-    // Constructorul segmentului de drum
     Street(float startX, float startZ, float length, float width, bool axisX, GLuint texID) {
         this->startX = startX;
         this->startZ = startZ;
@@ -27,34 +26,39 @@ public:
 
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, textureID);
-        glColor3f(1.0f, 1.0f, 1.0f); // Resetăm culoarea la alb pentru textură
+        glColor3f(1.0f, 1.0f, 1.0f);
 
-        // Calculăm de câte ori trebuie să se repete textura pe lungime
-        // astfel încât marcajele (liniile) să nu se lungească nenatural.
-        float tileRepeat = length / width;
-
-        // yOffset foarte mic (Z-fighting buffer) ca drumul să stea fix deasupra solului
         float y = 0.01f;
+        float step = 2.0f; // Subdiviziune mică pentru a capta conul Spotlight
 
         glBegin(GL_QUADS);
+        glNormal3f(0.0f, 1.0f, 0.0f);
+
         if (axisX) {
-            // --- STRADĂ PE AXA X ---
-            // Repetăm textura pe axa S (orizontalul imaginii devine lungimea drumului)
-            glTexCoord2f(0.0f, 0.0f);       glVertex3f(startX, y, startZ - width / 2.0f);
-            glTexCoord2f(tileRepeat, 0.0f);  glVertex3f(startX + length, y, startZ - width / 2.0f);
-            glTexCoord2f(tileRepeat, 1.0f);  glVertex3f(startX + length, y, startZ + width / 2.0f);
-            glTexCoord2f(0.0f, 1.0f);       glVertex3f(startX, y, startZ + width / 2.0f);
+            for (float x = startX; x < startX + length; x += step) {
+                float nextX = (x + step > startX + length) ? (startX + length) : (x + step);
+                float texS1 = (x - startX) / width;
+                float texS2 = (nextX - startX) / width;
+
+                glTexCoord2f(texS1, 0.0f);  glVertex3f(x, y, startZ - width / 2.0f);
+                glTexCoord2f(texS2, 0.0f);  glVertex3f(nextX, y, startZ - width / 2.0f);
+                glTexCoord2f(texS2, 1.0f);  glVertex3f(nextX, y, startZ + width / 2.0f);
+                glTexCoord2f(texS1, 1.0f);  glVertex3f(x, y, startZ + width / 2.0f);
+            }
         }
         else {
-            // --- STRADĂ PE AXA Z ---
-            // Repetăm textura pe axa T (verticalul imaginii devine lungimea drumului)
-            glTexCoord2f(0.0f, 0.0f);       glVertex3f(startX - width / 2.0f, y, startZ);
-            glTexCoord2f(1.0f, 0.0f);       glVertex3f(startX + width / 2.0f, y, startZ);
-            glTexCoord2f(1.0f, tileRepeat);  glVertex3f(startX + width / 2.0f, y, startZ + length);
-            glTexCoord2f(0.0f, tileRepeat);  glVertex3f(startX - width / 2.0f, y, startZ + length);
+            for (float z = startZ; z < startZ + length; z += step) {
+                float nextZ = (z + step > startZ + length) ? (startZ + length) : (z + step);
+                float texT1 = (z - startZ) / width;
+                float texT2 = (nextZ - startZ) / width;
+
+                glTexCoord2f(0.0f, texT1);  glVertex3f(startX - width / 2.0f, y, z);
+                glTexCoord2f(1.0f, texT1);  glVertex3f(startX + width / 2.0f, y, z);
+                glTexCoord2f(1.0f, texT2);  glVertex3f(startX + width / 2.0f, y, nextZ);
+                glTexCoord2f(0.0f, texT2);  glVertex3f(startX - width / 2.0f, y, nextZ);
+            }
         }
         glEnd();
-
         glDisable(GL_TEXTURE_2D);
     }
 };

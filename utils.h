@@ -1,5 +1,8 @@
 #pragma once
 #define _USE_MATH_DEFINES // Pentru M_PI
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE 0x812F
+#endif
 #include <math.h>
 #include <GL/glut.h>
 #include <stdio.h>
@@ -129,4 +132,60 @@ void drawSimpleBlock(float xMin, float xMax, float yMin, float yMax, float zMin,
     glVertex3f(xMin, yMin, zMin); glVertex3f(xMin, yMin, zMax);
     glVertex3f(xMin, yMax, zMax); glVertex3f(xMin, yMax, zMin);
     glEnd();
+}
+
+GLuint loadBMPWithChromaKey(const char* filename) {
+    FILE* file;
+    fopen_s(&file, filename, "rb");
+    if (file == NULL) return 0;
+
+    unsigned char info[54];
+    fread(info, sizeof(unsigned char), 54, file);
+
+    int width = *(int*)&info[18];
+    int height = *(int*)&info[22];
+
+    int size24 = 3 * width * height;
+    unsigned char* data24 = new unsigned char[size24];
+    fread(data24, sizeof(unsigned char), size24, file);
+    fclose(file);
+
+    // Alocăm spațiu pentru o textură RGBA (4 bytes per pixel)
+    int size32 = width * height * 4;
+    unsigned char* data32 = new unsigned char[size32];
+
+    // Convertim din RGB în RGBA și aplicăm masca roz
+    for (int i = 0; i < width * height; i++) {
+        unsigned char b = data24[i * 3];
+        unsigned char g = data24[i * 3 + 1];
+        unsigned char r = data24[i * 3 + 2];
+
+        data32[i * 4] = r; // R
+        data32[i * 4 + 1] = g; // G
+        data32[i * 4 + 2] = b; // B
+
+        // CHROMA KEY: Dacă pixelul este Roz Aprins (R=255, G=0, B=255), îl facem invizibil
+        if (r == 255 && g == 0 && b == 255) {
+            data32[i * 4 + 3] = 0; // Transparent (Alpha = 0)
+        }
+        else {
+            data32[i * 4 + 3] = 255; // Opac (Alpha = 255)
+        }
+    }
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    // Încărcăm în OpenGL ca GL_RGBA deoarece i-am construit noi canalul Alpha!
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data32);
+
+    delete[] data24;
+    delete[] data32;
+    return texture;
 }
