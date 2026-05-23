@@ -351,12 +351,25 @@ void drawBrutalistChair(float posX, float posZ, float rotY, float baseHeight, GL
 
 
 void drawCatBillboard(float x, float y, float z, GLuint catTexID) {
+    if (catTexID == 0) return;
+
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glDisable(GL_LIGHTING);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, catTexID);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    // Activăm Blending-ul standard pentru PNG transparent
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Oprim scrierea în Z-buffer doar pentru acest pătrat transparent 
+    // ca să poți vedea clădirile prin zonele unde pisica e invizibilă
+    glDepthMask(GL_FALSE);
+
     glPushMatrix();
     glTranslatef(x, y, z);
 
-    // Billboarding corect după cameră
     float modelview[16];
     glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
     float camRightX = modelview[0], camRightY = modelview[4], camRightZ = modelview[8];
@@ -365,34 +378,15 @@ void drawCatBillboard(float x, float y, float z, GLuint catTexID) {
     float catSizeX = 0.35f;
     float catSizeY = 0.45f;
 
-    if (catTexID == 0) {
-        // === MOD DEBUGER === 
-        // Dacă textura nu s-a încărcat, desenăm un pătrat roșu solid ca să verificăm poziția
-        glDisable(GL_TEXTURE_2D);
-        glColor3f(1.0f, 0.0f, 0.0f);
-        glBegin(GL_QUADS);
-        glVertex3f((-camRightX * catSizeX), (-camUpY * catSizeY), (-camRightZ * catSizeX));
-        glVertex3f((camRightX * catSizeX), (-camUpY * catSizeY), (camRightZ * catSizeX));
-        glVertex3f((camRightX * catSizeX), (camUpY * catSizeY), (camRightZ * catSizeX));
-        glVertex3f((-camRightX * catSizeX), (camUpY * catSizeY), (-camRightZ * catSizeX));
-        glEnd();
-    }
-    else {
-        // === MOD NORMAL CU TEXTURĂ ===
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, catTexID);
-        glEnable(GL_ALPHA_TEST);
-        glAlphaFunc(GL_GREATER, 0.1f);
-        glColor3f(1.0f, 1.0f, 1.0f); // Resetăm culoarea la alb ca să nu se înnegrească poza
-
-        glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f((-camRightX * catSizeX), (-camUpY * catSizeY), (-camRightZ * catSizeX));
-        glTexCoord2f(1.0f, 0.0f); glVertex3f((camRightX * catSizeX), (-camUpY * catSizeY), (camRightZ * catSizeX));
-        glTexCoord2f(1.0f, 1.0f); glVertex3f((camRightX * catSizeX), (camUpY * catSizeY), (camRightZ * catSizeX));
-        glTexCoord2f(0.0f, 1.0f); glVertex3f((-camRightX * catSizeX), (camUpY * catSizeY), (-camRightZ * catSizeX));
-        glEnd();
-    }
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f((-camRightX * catSizeX), (-camUpY * catSizeY), (-camRightZ * catSizeX));
+    glTexCoord2f(1.0f, 0.0f); glVertex3f((camRightX * catSizeX), (-camUpY * catSizeY), (camRightZ * catSizeX));
+    glTexCoord2f(1.0f, 1.0f); glVertex3f((camRightX * catSizeX), (camUpY * catSizeY), (camRightZ * catSizeX));
+    glTexCoord2f(0.0f, 1.0f); glVertex3f((-camRightX * catSizeX), (camUpY * catSizeY), (-camRightZ * catSizeX));
+    glEnd();
 
     glPopMatrix();
+
+    glDepthMask(GL_TRUE); // Repornim Z-buffer-ul pentru cadrele următoare
     glPopAttrib();
 }

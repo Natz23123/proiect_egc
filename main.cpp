@@ -12,6 +12,8 @@ float averageHeight = 3.5f;
 float floorHeight = averageHeight * 4;
 float eyeLevel = 1.7f;
 int lastCigaretteToggleTime = 0;
+bool isSmokingNow = false;
+int smokeAnimationStartTime = 0;
 float backLimit = -0.5f, frontLimit = 3.0f, leftLimit = -3.5f, rightLimit = 1.0f;
 Player player(0.0f, floorHeight + eyeLevel, 1.0f);
 
@@ -65,9 +67,10 @@ void init() {
     texWall3 = loadTexture("face3.bmp");   texWall4 = loadTexture("face4.bmp");
     texRoof = loadTexture("wall.bmp");     texEntrance = loadTexture("intrare1.bmp");
     texDrum = loadTexture("asphalt.bmp");  texGround = loadTexture("grass.bmp");
-    catTexID = loadBMPWithChromaKey("pufarina.bmp");
+    catTexID = loadPNGTexture("pufarina.png");
 
     wallPool[0] = texWall1; wallPool[1] = texWall2; wallPool[2] = texWall3; wallPool[3] = texWall4;
+
     init_city();
 
     // CONFIGURARE SPOTLIGHTS STÂLPI
@@ -129,6 +132,18 @@ void timer(int v) {
         }
         keys['e'] = false;
     }
+    if (keys['f'] && player.hasCigarette && !isSmokingNow) {
+        isSmokingNow = true;
+        smokeAnimationStartTime = glutGet(GLUT_ELAPSED_TIME); // Salvează timpul curent
+    }
+
+    if (isSmokingNow) {
+        int currentTime = glutGet(GLUT_ELAPSED_TIME);
+        // Dacă au trecut 1000 ms (1 secundă) de când ai apăsat F
+        if (currentTime - smokeAnimationStartTime > 1000) {
+            isSmokingNow = false; // Țigara revine la mână
+        }
+    }
 
     if (player.x < leftLimit + 0.2f || player.x > rightLimit - 0.2f) player.x = oldX;
     if (player.z < backLimit + 0.2f || player.z > frontLimit - 0.2f) player.z = oldZ;
@@ -178,20 +193,23 @@ void display() {
     drawGround(texGround);
     drawStreetLamp(-18.0f, -14.0f);
     drawStreetLamp(20.0f, -14.0f);
-    drawCity(strazi, cartier);
+    
     drawBalcony(floorHeight, backLimit, frontLimit, leftLimit, rightLimit, texBeton, texFloor, texCeiling);
     drawBrutalistTable(-3.0f, -0.1f, floorHeight, texBeton);
     drawBrutalistChair(-3.0f, 0.7f, 180.0f, floorHeight, texBeton, texFloor);
-    drawCatBillboard(-3.0f, floorHeight + 0.8f, 0.7f, catTexID);
+    drawCatBillboard(-3.0f, floorHeight + 0.6f, 0.55f, catTexID);
+    drawCity(strazi, cartier);
 
     // Logica Țigară & Fum
     if (!player.hasCigarette) {
         drawCigaretteModel(0.0f, floorHeight + 1.26f, backLimit + 0.06f, 180.0f, true, false);
     }
     else {
-        drawCigaretteModel(player, false);
+        drawCigaretteModel(player, isSmokingNow);
     }
     renderSmoke(player.lookX, player.lookY, player.lookZ);
+
+    
 
     glutSwapBuffers();
 
@@ -211,6 +229,7 @@ void mouseMotion(int x, int y) {
 }
 
 int main(int argc, char** argv) {
+    srand(static_cast<unsigned int>(time(NULL)));
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(screenW, screenH);

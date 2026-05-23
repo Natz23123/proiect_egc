@@ -221,8 +221,10 @@ void drawCigaretteModel(float x, float y, float z, float rotY, bool isOnBalustra
 void drawCigaretteModel(const Player& player, bool heavySmoke) {
     glPushMatrix();
 
+    // Translatăm la poziția camerei jucătorului
     glTranslatef(player.x, player.y, player.z);
 
+    // Rotațiile după orientarea camerei (lookX, lookY, lookZ)
     float angleY = atan2(player.lookX, player.lookZ) * 180.0f / M_PI;
     glRotatef(angleY, 0.0f, 1.0f, 0.0f);
 
@@ -230,12 +232,26 @@ void drawCigaretteModel(const Player& player, bool heavySmoke) {
     float angleX = -atan2(player.lookY, pitchLen) * 180.0f / M_PI;
     glRotatef(angleX, 1.0f, 0.0f, 0.0f);
 
-    float localX = -0.16f;
-    float localY = -0.08f;
-    float localZ = 0.20f;
+    // --- LOGICĂ DE TRANZIIE: MÂNĂ VS GURĂ ---
+    float localX, localY, localZ;
 
+    if (heavySmoke) {
+        // Când fumează: o aducem la gură (aproape de centru, puțin mai jos de ochi și mai aproape pe Z)
+        localX = -0.02f;  // Aproape pe centru (0.0f e fix în mijlocul ecranului)
+        localY = -0.05f;  // Puțin mai sus decât atunci când stă în mână
+        localZ = 0.12f;   // Mai aproape de cameră (Z mai mic înseamnă mai aproape de ochi în HUD-ul tău)
+    }
+    else {
+        // Când NU fumează: stă normal în mâna stângă jos
+        localX = -0.16f;
+        localY = -0.08f;
+        localZ = 0.20f;
+    }
+
+    // Aplicăm poziționarea calculată
     glTranslatef(localX, localY, localZ);
 
+    // --- RECALCULARE CORECTĂ PENTRU VÂRFUL ȚIGĂRII (FUM + LUMINĂ JAR) ---
     float lX = player.lookX, lY = player.lookY, lZ = player.lookZ;
     float len = sqrt(lX * lX + lY * lY + lZ * lZ);
     if (len > 0.0f) { lX /= len; lY /= len; lZ /= len; }
@@ -244,37 +260,39 @@ void drawCigaretteModel(const Player& player, bool heavySmoke) {
     float rLen = sqrt(rX * rX + rZ * rZ);
     if (rLen > 0.0f) { rX /= rLen; rZ /= rLen; }
 
+    // Folosim dinamic localZ și localX calculate mai sus pentru ca jarul și fumul să urmărească țigara la gură
     float varfX = player.x + lX * (localZ + 0.19f) + rX * localX;
     float varfY = player.y + lY * (localZ + 0.19f) + localY;
     float varfZ = player.z + lZ * (localZ + 0.19f) + rZ * localX;
 
+    // Actualizăm fumul intens și lumina dinamică a jarului la noile coordonate
     updateSmokeSystem(varfX, varfY, varfZ, heavySmoke);
-
-    // --- ADAUGARE PUNCT LUMINOS (Când țigara e în mâna jucătorului) ---
     setupAmberLight(varfX, varfY, varfZ);
 
     extern float timeOfDay;
 
-    // ... (restul codului tău de poziționare, fum și setupAmberLight) ...
-
-    glDisable(GL_LIGHTING); // O păstrăm dezactivată ca să nu devină un „dreptunghi bej”
+    glDisable(GL_LIGHTING);
     float halfW = 0.007f;
 
-    // Calculăm un factor de umbră pentru corpul țigării (foiță și filtru)
-    // Ziua = 1.0 (culori maxime), Noaptea = 0.25 (culori stinse, adaptate la întuneric)
+    // Calculăm factorul de umbră ambientala în funcție de zi/noapte
     float cigDarkness = 0.25f + 0.75f * timeOfDay;
 
-    // 1. Filtrul portocaliu (influențat de întunericul nopții)
+    // 1. Filtrul portocaliu
     drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.0f, 0.05f,
         0.85f * cigDarkness, 0.45f * cigDarkness, 0.2f * cigDarkness);
 
-    // 2. Foița albă (influențată puternic de noapte - devine un gri-închis realist)
+    // 2. Foița albă
     drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.05f, 0.18f,
         0.95f * cigDarkness, 0.95f * cigDarkness, 0.95f * cigDarkness);
 
-    // 3. Jarul aprins! (ATENȚIE: Jarul EMITE lumină, deci NU trebuie să se stingă noaptea! 
-    // Din contră, noaptea trebuie să fie la fel de roșu și intens!)
-    drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.18f, 0.19f, 1.0f, 0.2f, 0.0f);
+    // 3. Jarul aprins (rămâne intens indiferent de noapte/zi, mărim intensitatea când e heavySmoke)
+    if (heavySmoke) {
+        // Când tragi din ea, jarul strălucește mai puternic spre galben/alb incandescent
+        drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.18f, 0.19f, 1.0f, 0.6f, 0.1f);
+    }
+    else {
+        drawSimpleBlock(-halfW, halfW, -halfW, halfW, 0.18f, 0.19f, 1.0f, 0.2f, 0.0f);
+    }
 
     glEnable(GL_LIGHTING);
     glPopMatrix();

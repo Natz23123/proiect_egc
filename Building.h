@@ -63,6 +63,10 @@ public:
             float yMin = i * floorHeight;
             float yMax = (i + 1) * floorHeight;
 
+            // FORȚĂM CULOAREA ALBĂ PURĂ PENTRU FIECARE ETAJ
+            // Previne ca texturile să preia nuanțe de gri de la alte obiecte din scenă
+            glColor3f(1.0f, 1.0f, 1.0f);
+
             // Față
             glBindTexture(GL_TEXTURE_2D, floors[i].faceTextures[0]);
             glBegin(GL_QUADS); glNormal3f(0.0f, 0.0f, 1.0f);
