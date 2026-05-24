@@ -18,7 +18,7 @@ int smokeAnimationStartTime = 0;
 float backLimit = -0.5f, frontLimit = 3.0f, leftLimit = -3.5f, rightLimit = 1.0f;
 Player player(0.0f, floorHeight + eyeLevel, 1.0f);
 
-float timeOfDay = 0.0f;
+float timeOfDay = 90.0f;
 float timePass = 0.0015f;
 
 std::vector<Building*> cartier;
