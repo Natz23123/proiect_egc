@@ -6,6 +6,7 @@
 #include "Assets.h"
 #include "Building.h"
 #include "Street.h"
+#include "Rain.h"
 
 // --- VARIABILE GLOBALE ---
 float averageHeight = 3.5f;
@@ -152,6 +153,8 @@ void timer(int v) {
     angle += timePass;
     timeOfDay = (sin(angle) + 1.0f) / 2.0f;
 
+    updateRainSystem(player.x, player.y, player.z, floorHeight, backLimit, frontLimit, leftLimit, rightLimit);
+
     glutPostRedisplay();
     glutTimerFunc(16, timer, 0);
 }
@@ -209,7 +212,7 @@ void display() {
     }
     renderSmoke(player.lookX, player.lookY, player.lookZ);
 
-    
+    renderRain();
 
     glutSwapBuffers();
 
