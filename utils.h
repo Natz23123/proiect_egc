@@ -1,4 +1,8 @@
 #pragma once
+<<<<<<< HEAD
+=======
+#define STB_IMAGE_IMPLEMENTATION
+>>>>>>> de6534426a6e11e9730ced9c2ef6c6fa506f4b42
 #define _USE_MATH_DEFINES // Pentru M_PI
 #ifndef GL_CLAMP_TO_EDGE
 #define GL_CLAMP_TO_EDGE 0x812F
@@ -10,6 +14,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+<<<<<<< HEAD
 
 // Funcția ta originală pentru texturi normale (fără transparență)
 GLuint loadTexture(const char* filename) {
@@ -38,6 +43,20 @@ GLuint loadTexture(const char* filename) {
         data[i + 2] = tmp;
     }
 
+=======
+#include "stb_image.h"
+
+// Funcția ta originală pentru texturi normale (fără transparență)
+GLuint loadTexture(const char* filename) {
+    int width, height, channels;
+
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* data = stbi_load(filename, &width, &height, &channels, 3);
+
+    if (data == NULL) return 0;
+
+    GLuint texture;
+>>>>>>> de6534426a6e11e9730ced9c2ef6c6fa506f4b42
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -46,9 +65,18 @@ GLuint loadTexture(const char* filename) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+<<<<<<< HEAD
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     delete[] data;
+=======
+    // Acum va funcționa perfect, pentru că stb_image a eliminat padding-ul!
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+    stbi_image_free(data);
+>>>>>>> de6534426a6e11e9730ced9c2ef6c6fa506f4b42
     return texture;
 }
 
@@ -134,6 +162,7 @@ void drawSimpleBlock(float xMin, float xMax, float yMin, float yMax, float zMin,
     glEnd();
 }
 
+<<<<<<< HEAD
 GLuint loadBMPWithChromaKey(const char* filename) {
     FILE* file;
     fopen_s(&file, filename, "rb");
@@ -171,6 +200,21 @@ GLuint loadBMPWithChromaKey(const char* filename) {
         else {
             data32[i * 4 + 3] = 255; // Opac (Alpha = 255)
         }
+=======
+GLuint loadPNGTexture(const char* filename) {
+    int width, height, channels;
+
+    // =========================================================
+    // LINIA MAGICĂ: Îi spune lui stb_image să întoarcă poza corect pentru OpenGL
+    // =========================================================
+    stbi_set_flip_vertically_on_load(true);
+
+    unsigned char* data = stbi_load(filename, &width, &height, &channels, 4);
+
+    if (data == NULL) {
+        std::cerr << "Eroare la incarcarea imaginii PNG: " << filename << "\n";
+        return 0;
+>>>>>>> de6534426a6e11e9730ced9c2ef6c6fa506f4b42
     }
 
     GLuint texture;
@@ -179,6 +223,7 @@ GLuint loadBMPWithChromaKey(const char* filename) {
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+<<<<<<< HEAD
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
@@ -187,5 +232,45 @@ GLuint loadBMPWithChromaKey(const char* filename) {
 
     delete[] data24;
     delete[] data32;
+=======
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+    stbi_image_free(data);
+    return texture;
+}
+
+// Asigură-te că funcția asta folosește stb_image (o avem deja din pasul cu pisica)
+GLuint loadAnyTexture(const char* filename) {
+    int width, height, channels;
+
+    // Corectăm orientarea axei Y pentru OpenGL
+    stbi_set_flip_vertically_on_load(true);
+
+    // Forțăm citirea a 3 canale (RGB) pentru clădiri standard (fără transparență)
+    unsigned char* data = stbi_load(filename, &width, &height, &channels, 3);
+
+    if (data == NULL) {
+        std::cerr << "Eroare grava la incarcarea texturii: " << filename << "\n";
+        return 0;
+    }
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    // Setăm filtre de calitate (previne artefactele și glitch-urile la distanță)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // Încărcăm în OpenGL ca GL_RGB standard
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+    stbi_image_free(data);
+>>>>>>> de6534426a6e11e9730ced9c2ef6c6fa506f4b42
     return texture;
 }

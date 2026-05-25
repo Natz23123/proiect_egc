@@ -351,12 +351,34 @@ void drawBrutalistChair(float posX, float posZ, float rotY, float baseHeight, GL
 
 
 void drawCatBillboard(float x, float y, float z, GLuint catTexID) {
+<<<<<<< HEAD
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glDisable(GL_LIGHTING);
     glPushMatrix();
     glTranslatef(x, y, z);
 
     // Billboarding corect după cameră
+=======
+    if (catTexID == 0) return;
+
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glDisable(GL_LIGHTING);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, catTexID);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    // Activăm Blending-ul standard pentru PNG transparent
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Oprim scrierea în Z-buffer doar pentru acest pătrat transparent 
+    // ca să poți vedea clădirile prin zonele unde pisica e invizibilă
+    glDepthMask(GL_FALSE);
+
+    glPushMatrix();
+    glTranslatef(x, y, z);
+
+>>>>>>> de6534426a6e11e9730ced9c2ef6c6fa506f4b42
     float modelview[16];
     glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
     float camRightX = modelview[0], camRightY = modelview[4], camRightZ = modelview[8];
@@ -365,6 +387,7 @@ void drawCatBillboard(float x, float y, float z, GLuint catTexID) {
     float catSizeX = 0.35f;
     float catSizeY = 0.45f;
 
+<<<<<<< HEAD
     if (catTexID == 0) {
         // === MOD DEBUGER === 
         // Dacă textura nu s-a încărcat, desenăm un pătrat roșu solid ca să verificăm poziția
@@ -394,5 +417,17 @@ void drawCatBillboard(float x, float y, float z, GLuint catTexID) {
     }
 
     glPopMatrix();
+=======
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f((-camRightX * catSizeX), (-camUpY * catSizeY), (-camRightZ * catSizeX));
+    glTexCoord2f(1.0f, 0.0f); glVertex3f((camRightX * catSizeX), (-camUpY * catSizeY), (camRightZ * catSizeX));
+    glTexCoord2f(1.0f, 1.0f); glVertex3f((camRightX * catSizeX), (camUpY * catSizeY), (camRightZ * catSizeX));
+    glTexCoord2f(0.0f, 1.0f); glVertex3f((-camRightX * catSizeX), (camUpY * catSizeY), (-camRightZ * catSizeX));
+    glEnd();
+
+    glPopMatrix();
+
+    glDepthMask(GL_TRUE); // Repornim Z-buffer-ul pentru cadrele următoare
+>>>>>>> de6534426a6e11e9730ced9c2ef6c6fa506f4b42
     glPopAttrib();
 }
